@@ -17,7 +17,9 @@
   (testing "can insert nodes"
     (is (= [:p "A"] (-> [:p] zipper/->zip (zip/insert-child "A") zip/node))))
   (testing "can insert children into attribute nodes"
-    (is (= [:p {:a 1} "B"] (-> [:p {:a 1}] zipper/->zip (zip/insert-child "B") zip/node)))))
+    (is (= [:p {:a 1} "B"] (-> [:p {:a 1}] zipper/->zip (zip/insert-child "B") zip/node))))
+  (testing "can insert text children"
+    (is (= [:div [:p ""]] (-> [:div [:p]] zipper/->zip zip/down (zip/insert-child "") zip/root)))))
 
 (deftest find-loc []
   (testing "returns nil for no match"

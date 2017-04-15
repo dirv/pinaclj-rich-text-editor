@@ -5,12 +5,6 @@
 
 (def doc (atom []))
 (def bold (atom false))
-(def node-key (atom 0))
-
-(defn- next-key []
-  (let [next-key @node-key]
-    (swap! node-key inc)
-    (str next-key)))
 
 (defn- insert-into-string [s offset c]
   (str (subs s 0 offset) c (subs s offset)))
@@ -37,12 +31,25 @@
 (defn- get-selection-focus []
   (let [selection (.getSelection js/document)
         focus-node (.-focusNode selection)]
-    [(->key (.-parentNode focus-node)) (.-focusOffset selection)]))
+    (if (= (.-nodeType focus-node) js/Node.TEXT_NODE)
+      [(->key (.-parentNode focus-node)) (.-focusOffset selection)]
+      [(->key focus-node) (.-focusOffset selection)])))
+
+(defn- matches-tag? [tag node]
+  (and (vector? node) (= tag (first node))))
+
+(defn- ensure-in-paragraph [loc]
+  (if-not (some #(when (matches-tag? :p %) %) (cons (zip/node loc) (zip/path loc)))
+    (-> loc (zip/insert-child [:p]) zip/down (zip/insert-child ""))
+    loc))
 
 (defn- handle-keypress [e]
   (let [[focus-node-key focus-offset] (get-selection-focus)
-        focus-loc (or (zip-to-node @doc focus-node-key) @doc)]
-    (reset! doc (zipper/root-loc (insert-character focus-loc focus-offset (char (.-charCode e)))))))
+        focus-loc (zip-to-node @doc focus-node-key)]
+    (reset! doc (-> focus-loc
+                    ensure-in-paragraph
+                    (insert-character focus-offset (char (.-charCode e)))
+                    zipper/root-loc))))
 
 (defn- handle-keydown [e]
   (when (.-metaKey e)
@@ -52,13 +59,12 @@
 (defn- select-first-text-node [root]
   (let [selection (.getSelection js/document)
         rng (.createRange js/document)]
-    (.setStart rng (.-firstChild (.-firstChild root)) 0)
+    (.setStart rng root 0)
     (.collapse rng true)
     (.addRange selection rng)))
 
 (defn attach-editor [root new-doc]
   (reset! bold false)
-  (reset! node-key 0)
   (reset! doc (zipper/->zip new-doc))
   (render/render (zip/node @doc) root)
   (select-first-text-node root)

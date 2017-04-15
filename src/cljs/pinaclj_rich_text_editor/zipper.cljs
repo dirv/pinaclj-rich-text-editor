@@ -4,8 +4,10 @@
 (defn- children [[_ & [attrs-or-first-child & remaining-children :as all-children]]]
   (if (map? attrs-or-first-child) remaining-children all-children))
 
-(defn- make-node [node children]
-  (into node children))
+(defn- make-node [[tag & existing] replace-children]
+  (if (map? (first existing))
+    (into [tag (first existing)] replace-children)
+    (into [tag] replace-children)))
 
 (def ->zip
   (partial zip/zipper vector? children make-node))

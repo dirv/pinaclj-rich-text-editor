@@ -62,7 +62,9 @@
     (is (= "<p></p>" (perform [:p ""] #(type-key \B :meta true)))))
   (testing "typing the bold character and then text causes bold text to appear"
     (is (= "<p><b>C</b></p>" (perform [:p ""] #(do (type-key \B :meta true)
-                                                   (type-key \C :shift true)))))))
+                                                   (type-key \C :shift true))))))
+  (testing "opens a paragraph element if there isn't one already"
+    (is (= "<div><p>C</p></div>" (perform [:div] #(type-key \C :shift true))))))
 
 (deftest positioning []
   (testing "text is inserted at last-clicked position"
