@@ -1,9 +1,11 @@
 (ns pinaclj-rich-text-editor.render
-  (:require [incremental-dom :as idom]))
+  (:require [incremental-dom :as idom]
+            [pinaclj-rich-text-editor.hiccup :as hiccup]))
+
 
 (defn- select-type [node]
   (if (vector? node)
-    (if (= 1 (count node))
+    (if (or (= 1 (count node)) (and (= 2 (count node)) (map? (second node))))
       :leaf-element
       :parent-element)
     :text-node))
@@ -14,12 +16,12 @@
 (defmulti render-element select-type)
 
 (defn- render-parent [tag attrs children]
-  (apply idom/elementOpen (name tag) nil [] (->attr-stream attrs))
+  (apply idom/elementOpen (name tag) (get attrs :key) [] (->attr-stream attrs))
   (doall (map render-element children))
   (idom/elementClose (name tag)))
 
-(defmethod render-element :leaf-element [[tag]]
-  (idom/elementVoid (name tag) nil []))
+(defmethod render-element :leaf-element [[tag attrs]]
+  (idom/elementVoid (name tag) (get attrs :key) []))
 
 (defmethod render-element :parent-element
   ([[tag & [attrs-or-first-child & remaining-children :as all-children]]]
@@ -29,9 +31,6 @@
 
 (defmethod render-element :text-node [text]
   (idom/text text))
-
-(defn render [doc node]
-  (idom/patch node #(render-element %) doc))
 
 (defn render-all [children node]
   (idom/patch node #(doall (map render-element children))))
