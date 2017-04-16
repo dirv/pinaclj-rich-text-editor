@@ -17,19 +17,19 @@
 (defn- matches-tag? [tag node]
   (and (vector? node) (= tag (first node))))
 
+
 (defn- ensure-in-paragraph [loc]
-  (if-not (some #(when (matches-tag? :p %) %) (cons (zip/node loc) (zip/path loc)))
-    (-> loc (zip/insert-child [:p]) zip/down (zip/insert-child ""))
-    loc))
+    (or (zipper/find-loc loc (partial matches-tag? :p))
+      (-> loc (zip/insert-child [:p {}]) zip/down (zip/insert-child ""))))
 
 (defn insert-into-loc [doc node-key focus-offset c]
-  (-> (zipper/find-loc doc (partial hiccup/matches-attr? :key node-key))
-      ensure-in-paragraph
+  (-> (if node-key
+        (zipper/find-loc doc (partial hiccup/matches-attr? :key node-key))
+        (ensure-in-paragraph doc))
       (insert-character focus-offset c)))
 
 (defn toggle-bold []
-  (reset! bold true)
-  )
+  (reset! bold true))
 
 (defn reset []
   (reset! bold false))

@@ -21,3 +21,7 @@
 (defn find-loc [z predicate]
   (some #(when (predicate (zip/node %)) %) (dfs z)))
 
+(defn map-loc [z map-fn]
+  (last (take-while #(not (zip/end? %))
+                    (iterate #(-> % (zip/edit map-fn) zip/next) (root-loc z)))))
+

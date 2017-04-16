@@ -32,3 +32,6 @@
 
 (defn render [doc node]
   (idom/patch node #(render-element %) doc))
+
+(defn render-all [children node]
+  (idom/patch node #(doall (map render-element children))))

@@ -43,31 +43,42 @@
   (let [root-element (.createElement js/document "div")]
     (.appendChild (.-body js/document) root-element)))
 
-(defn- perform [initial-doc action]
+(defn- remove-all-keys [node]
+  (when-not (core/text-node? node)
+    (.removeAttribute node "key")
+    (doall (map remove-all-keys (array-seq (.-childNodes node))))))
+
+(defn- perform [initial-children action]
   (let [editor-node (create-root)]
-    (core/attach-editor editor-node initial-doc)
+    (apply core/attach-editor editor-node initial-children)
     (action)
+    (remove-all-keys editor-node)
     (.-innerHTML editor-node)))
 
 (deftest loading []
   (testing "it renders nodes"
     (core/attach-editor (create-root) [:p {:key "1"} "Rendered"])
-    (is (not (nil? (find-dom-node "1"))))))
+    (is (not (nil? (find-dom-node "1")))))
+  (testing "renders multiple nodes"
+    (let [root-node (create-root)]
+      (core/attach-editor root-node [:p "a"] [:p "b"])
+      (remove-all-keys root-node)
+      (is (= "<p>a</p><p>b</p>" (.-innerHTML root-node))))))
 
 (deftest typing []
-  (testing "typing a character inserts a new paragraph with that element"
-    (is (= "<p>C</p>" (perform [:p ""] #(type-key \C :shift true)))))
+  (testing "typing a character inserts that character into existing paragraph"
+    (is (= "<p>C</p>" (perform [[:p ""]] #(type-key \C :shift true)))))
   (testing "typing a control character does not cause a character to appear"
-    (is (= "<p></p>" (perform [:p ""] #(type-key \B :meta true)))))
+    (is (= "<p></p>" (perform [[:p ""]] #(type-key \B :meta true)))))
   (testing "typing the bold character and then text causes bold text to appear"
-    (is (= "<p><b>C</b></p>" (perform [:p ""] #(do (type-key \B :meta true)
+    (is (= "<p><b>C</b></p>" (perform [[:p ""]] #(do (type-key \B :meta true)
                                                    (type-key \C :shift true))))))
   (testing "opens a paragraph element if there isn't one already"
-    (is (= "<div><p>C</p></div>" (perform [:div] #(type-key \C :shift true))))))
+    (is (= "<p>C</p>" (perform [] #(type-key \C :shift true))))))
 
 (deftest positioning []
   (testing "text is inserted at last-clicked position"
-    (is (= "<p key=\"initial\">Hello, world</p>"
-           (perform [:p {:key "initial"} "Hello world"]
+    (is (= "<p>Hello, world</p>"
+           (perform [[:p {:key "initial"} "Hello world"]]
                     #(do (set-range "initial" 5)
                          (type-key \,)))))))

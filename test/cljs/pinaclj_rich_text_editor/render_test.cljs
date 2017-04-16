@@ -5,7 +5,7 @@
 
 (defn- render [node]
   (let [elem (.createElement js/document "div")]
-    (render/render node elem)
+    (render/render-all [node] elem)
     (.-innerHTML elem)))
 
 (deftest renders []
