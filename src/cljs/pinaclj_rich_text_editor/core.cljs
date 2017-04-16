@@ -1,17 +1,16 @@
 (ns pinaclj-rich-text-editor.core
   (:require [pinaclj-rich-text-editor.editor :as editor]
-            [pinaclj-rich-text-editor.hiccup :as hiccup]
             [pinaclj-rich-text-editor.render :as render]
             [pinaclj-rich-text-editor.zipper :as zipper]
             [clojure.zip :as zip]))
 
 (def doc-loc (atom nil))
 
-(defn- zip-to-node [doc node-key]
-  (zipper/find-loc doc (partial hiccup/matches-attr? :key node-key)))
-
 (defn- ->key [node]
   (.getAttribute node "key"))
+
+(defn- text-node? [node]
+  (= js/Node.TEXT_NODE (.-nodeType node)))
 
 (defn- get-selection-focus []
   (let [selection (.getSelection js/document)
@@ -21,12 +20,8 @@
       [(->key focus-node) (.-focusOffset selection)])))
 
 (defn- handle-keypress [e]
-  (let [[focus-node-key focus-offset] (get-selection-focus)
-        focus-loc (zip-to-node @doc-loc focus-node-key)]
-    (reset! doc-loc (-> focus-loc
-                    editor/ensure-in-paragraph
-                    (editor/insert-character focus-offset (char (.-charCode e)))
-                    zipper/root-loc))))
+  (let [[focus-node-key focus-offset] (get-selection-focus)]
+    (swap! doc-loc editor/insert-into-loc focus-node-key focus-offset (char (.-charCode e)))))
 
 (defn- handle-keydown [e]
   (when (.-metaKey e)
@@ -41,7 +36,7 @@
     (.addRange selection rng)))
 
 (defn- render-into [root]
-  (render/render (zip/node @doc-loc) root))
+  (render/render (zip/root @doc-loc) root))
 
 (defn attach-editor [root new-doc]
   (editor/reset)
