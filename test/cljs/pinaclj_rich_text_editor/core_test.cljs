@@ -47,7 +47,6 @@
   (let [editor-node (create-root)]
     (core/attach-editor editor-node initial-doc)
     (action)
-    (core/render editor-node)
     (.-innerHTML editor-node)))
 
 (deftest loading []
