@@ -32,10 +32,12 @@
         (zip/insert-child ""))
     loc))
 
-(defn insert-into-loc [loc [_ child-index text-offset :as focus] c]
-  (-> loc
-      (ensure-in-paragraph focus)
-      (insert-character child-index text-offset c)))
+(defn insert-into-loc [{loc :doc-loc [_ child-index text-offset :as focus] :selection-focus} c]
+  {:selection-focus focus
+   :doc-loc (-> loc
+                (ensure-in-paragraph focus)
+                (insert-character child-index text-offset c)
+                )})
 
 (defn toggle-bold []
   (reset! bold true))

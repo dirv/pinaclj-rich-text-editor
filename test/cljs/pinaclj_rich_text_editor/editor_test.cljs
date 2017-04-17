@@ -16,7 +16,11 @@
                               [:p {:key "3"}]])
                                 (partial hiccup/matches-attr? :key "3")))
 
-(def insert (comp zip/node editor/insert-into-loc))
+(defn- insert [doc-loc position c]
+  (-> {:doc-loc doc-loc :selection-focus position}
+                (editor/insert-into-loc c)
+                :doc-loc
+                zip/node))
 
 (deftest insert-into-loc []
   (testing "creates a new paragraph if none exists"

@@ -32,7 +32,7 @@
   [(->key (or (zipper/find-loc loc (partial hiccup/matches-tag? :p))
               (zipper/root-loc loc))) 0 0])
 
-(defn on-focus-changed [doc-loc]
+(defn on-focus-changed [{doc-loc :doc-loc}]
   (let [new-focus (or (get-selection-focus) (focus-at-first-para doc-loc))]
     {:selection-focus new-focus
      :doc-loc (move-loc-to-focus doc-loc new-focus)}))
