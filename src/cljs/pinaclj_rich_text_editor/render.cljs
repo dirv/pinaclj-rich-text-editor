@@ -20,7 +20,7 @@
   (idom/elementClose (name tag)))
 
 (defmethod render-element :leaf-element [[tag attrs]]
-  (idom/elementVoid (name tag) (get attrs :key) []))
+  (apply idom/elementVoid (name tag) (get attrs :key) [] (->attr-stream attrs)))
 
 (defmethod render-element :parent-element
   ([[tag & [attrs-or-first-child & remaining-children :as all-children]]]

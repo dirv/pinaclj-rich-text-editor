@@ -22,6 +22,10 @@
   (some #(when (predicate (zip/node %)) %) (dfs z)))
 
 (defn map-loc [z map-fn]
-  (last (take-while #(not (zip/end? %))
-                    (iterate #(-> % (zip/edit map-fn) zip/next) (root-loc z)))))
+  (let [mapped-loc (zip/edit z map-fn)
+        next-loc (zip/next mapped-loc)]
+    (if (zip/end? next-loc)
+      mapped-loc
+      (recur next-loc map-fn))))
+
 

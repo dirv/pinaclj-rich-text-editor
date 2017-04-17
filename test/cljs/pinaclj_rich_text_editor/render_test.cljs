@@ -39,7 +39,7 @@
       (with-redefs [idom/elementVoid (fn [& args] (swap! calls conj args))]
         (render [:p {:test "1"}])
         (is (= 1 (count @calls)))
-        (is (= ["p" nil []]) (first @calls))))))
+        (is (= ["p" nil [] "test" "1"]) (first @calls))))))
 
 (deftest element-keys []
   (testing "passes key to parent elements"

@@ -1,5 +1,6 @@
 (ns pinaclj-rich-text-editor.editor
   (:require [pinaclj-rich-text-editor.hiccup :as hiccup]
+            [pinaclj-rich-text-editor.selection :as selection]
             [pinaclj-rich-text-editor.zipper :as zipper]
             [clojure.zip :as zip]))
 
@@ -20,17 +21,20 @@
     (replace-child loc child-index #(vector :b (create-or-insert-into-string % offset c)))
     (replace-child loc child-index #(create-or-insert-into-string % offset c))))
 
-(defn- matches-tag? [tag node]
-  (and (vector? node) (= tag (first node))))
+(defn- in-paragraph? [loc]
+  (some (partial hiccup/matches-tag? :p) (cons (zip/node loc) (zip/path loc))))
 
-(defn- ensure-in-paragraph [loc]
-    (or (zipper/find-loc loc (partial matches-tag? :p))
-      (-> loc (zip/insert-child [:p {}]) zip/down (zip/insert-child ""))))
+(defn- ensure-in-paragraph [loc focus]
+  (if-not (in-paragraph? loc)
+    (-> loc
+        (zip/insert-child [:p {}])
+        zip/down
+        (zip/insert-child ""))
+    loc))
 
-(defn insert-into-loc [doc [focus-key child-index text-offset] c]
-  (-> (if focus-key
-        (zipper/find-loc doc (partial hiccup/matches-attr? :key focus-key))
-        (ensure-in-paragraph doc))
+(defn insert-into-loc [loc [_ child-index text-offset :as focus] c]
+  (-> loc
+      (ensure-in-paragraph focus)
       (insert-character child-index text-offset c)))
 
 (defn toggle-bold []

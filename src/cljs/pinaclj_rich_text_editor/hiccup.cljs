@@ -7,10 +7,12 @@
 (defn matches-attr? [k v node]
   (= v (attr node k)))
 
+(defn matches-tag? [tag node]
+  (and (vector? node) (= tag (first node))))
+
 (defn insert-attr [[tag & [attrs-or-first-child & remaining-children :as all-children] :as node] k v]
   (if (nil? (attr node k))
     (if (map? attrs-or-first-child)
-      (apply vector tag (assoc attrs-or-first-child k v) remaining-children)
-      (apply vector tag {k v} all-children))
+      (apply vector tag (assoc attrs-or-first-child k v) (or remaining-children []))
+      (apply vector tag {k v} (or all-children [])))
     node))
-
