@@ -1,10 +1,11 @@
 (ns pinaclj-rich-text-editor.dom-fixture)
 
 (defn clear-dom [f]
-  (let [body (.-body js/document)
-        firstChild (.-firstChild body)]
-    (when firstChild
-      (.removeChild body firstChild)))
+  (let [body (.-body js/document)]
+    (loop []
+      (when-let [child (.-firstChild body)]
+        (.removeChild body child)
+        (recur))))
   (f))
 
 (defn create-root []

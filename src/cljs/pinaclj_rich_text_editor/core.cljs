@@ -5,6 +5,7 @@
             [pinaclj-rich-text-editor.render :as render]
             [pinaclj-rich-text-editor.selection :as selection]
             [pinaclj-rich-text-editor.zipper :as zipper]
+            [pinaclj-rich-text-editor.strong-text :as strong-text]
             [clojure.zip :as zip]))
 
 (def state (atom {}))
@@ -21,8 +22,8 @@
   (swap! state editor/insert-into-loc (char (.-charCode e))))
 
 (defn- handle-keydown [e]
-  (when (.-metaKey e)
-    (editor/toggle-bold)
+  (when-let [new-state (strong-text/toggle @state e)]
+    (reset! state new-state)
     (.preventDefault e)))
 
 (defn- assign-key-to-node [next-key-fn node]
@@ -36,11 +37,11 @@
     (render/render-all children root)))
 
 (defn attach-editor [root & children]
-  (editor/reset)
   (reset! state {:doc-loc (-> (apply vector :root children) zipper/->zip)
                  :selection-focus ["0" 0 0]
                  :next-key-fn (build-next-key-fn)})
   (swap! state assign-keys)
+  (swap! state editor/initialize)
   (render-into root)
   (selection/select-first-node root)
   (.addEventListener js/document "keydown" handle-keydown)
