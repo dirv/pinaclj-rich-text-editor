@@ -5,28 +5,33 @@
 
 (def bold (atom false))
 
-(defn- insert-into-string [s offset c]
-  (str (subs s 0 offset) c (subs s offset)))
+(defn- create-or-insert-into-string [s offset c]
+  (if s
+    (str (subs s 0 offset) c (subs s offset))
+    (str c)))
 
-(defn- insert-character [loc offset c]
-  (let [[tag attrs text] (zip/node loc)]
-    (if @bold
-      (zip/replace loc [tag attrs [:b (insert-into-string (or text "") offset c)]])
-      (zip/replace loc [tag attrs (insert-into-string (or text "") offset c)]))))
+(defn- replace-child [loc child-index replace-fn]
+  (let [[tag attrs & children] (zip/node loc)
+        new-child (replace-fn (nth children child-index))]
+    (zip/replace loc (apply vector tag attrs (assoc (apply vector children) child-index new-child)))))
+
+(defn- insert-character [loc child-index offset c]
+  (if @bold
+    (replace-child loc child-index #(vector :b (create-or-insert-into-string % offset c)))
+    (replace-child loc child-index #(create-or-insert-into-string % offset c))))
 
 (defn- matches-tag? [tag node]
   (and (vector? node) (= tag (first node))))
-
 
 (defn- ensure-in-paragraph [loc]
     (or (zipper/find-loc loc (partial matches-tag? :p))
       (-> loc (zip/insert-child [:p {}]) zip/down (zip/insert-child ""))))
 
-(defn insert-into-loc [doc node-key focus-offset c]
-  (-> (if node-key
-        (zipper/find-loc doc (partial hiccup/matches-attr? :key node-key))
+(defn insert-into-loc [doc [focus-key child-index text-offset] c]
+  (-> (if focus-key
+        (zipper/find-loc doc (partial hiccup/matches-attr? :key focus-key))
         (ensure-in-paragraph doc))
-      (insert-character focus-offset c)))
+      (insert-character child-index text-offset c)))
 
 (defn toggle-bold []
   (reset! bold true))

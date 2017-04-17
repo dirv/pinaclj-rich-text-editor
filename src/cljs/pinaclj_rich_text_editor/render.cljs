@@ -2,7 +2,6 @@
   (:require [incremental-dom :as idom]
             [pinaclj-rich-text-editor.hiccup :as hiccup]))
 
-
 (defn- select-type [node]
   (if (vector? node)
     (if (or (= 1 (count node)) (and (= 2 (count node)) (map? (second node))))

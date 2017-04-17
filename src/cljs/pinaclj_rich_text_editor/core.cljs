@@ -20,16 +20,27 @@
 (defn- text-node? [node]
   (= js/Node.TEXT_NODE (.-nodeType node)))
 
+(defn- children [node]
+  (array-seq (.-childNodes node)))
+
+(defn- child-index [parent child]
+  (.indexOf (children parent) child))
+
+(defn- ->caret [text-node text-position]
+  (let [parent (.-parentNode text-node)]
+    [(->key parent)
+     (child-index parent text-node)
+     text-position]))
+
 (defn- get-selection-focus []
   (let [selection (.getSelection js/document)
         focus-node (.-focusNode selection)]
     (if (and focus-node (text-node? focus-node))
-      [(->key (.-parentNode focus-node)) (.-focusOffset selection)]
-      [nil (.-focusOffset selection)])))
+      (->caret focus-node (.-focusOffset selection))
+      [nil 0 0])))
 
 (defn- handle-keypress [e]
-  (let [[focus-node-key focus-offset] (get-selection-focus)]
-    (swap! doc-loc editor/insert-into-loc focus-node-key focus-offset (char (.-charCode e)))))
+  (swap! doc-loc editor/insert-into-loc (get-selection-focus) (char (.-charCode e))))
 
 (defn- handle-keydown [e]
   (when (.-metaKey e)

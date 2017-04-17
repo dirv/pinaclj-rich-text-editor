@@ -16,10 +16,10 @@
 (def insert (comp zip/node editor/insert-into-loc))
 (deftest insert-into-loc []
   (testing "it inserts at the first paragraph if no node key is set"
-    (is (= [:p {} "a"] (insert doc nil 0 \a))))
+    (is (= [:p {} "a"] (insert doc [nil 0 0] \a))))
   (testing "creates a new paragraph if none exists"
-    (is (= [:p {} "a"] (insert empty-doc nil 0 \a))))
+    (is (= [:p {} "a"] (insert empty-doc [nil 0 0] \a))))
   (testing "inserts at specified point"
-    (is (= [:p {} "Hello, world"] (insert hello-doc nil 5 \,))))
+    (is (= [:p {} "Hello, world"] (insert hello-doc [nil 0 5] \,))))
   (testing "inserts with the right key"
-    (is (= [:p {:key "3"} "b"] (insert multi-doc "3" 0 \b)))))
+    (is (= [:p {:key "3"} "x"] (insert multi-doc ["3" 0 0] \x)))))
