@@ -4,6 +4,9 @@
   (when (map? attrs-or-child)
     (get attrs-or-child k)))
 
+(defn tag [node]
+  (first node))
+
 (defn matches-attr? [k v node]
   (= v (attr node k)))
 

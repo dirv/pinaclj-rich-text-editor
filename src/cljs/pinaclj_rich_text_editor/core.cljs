@@ -2,6 +2,7 @@
   (:require [pinaclj-rich-text-editor.dom :as dom]
             [pinaclj-rich-text-editor.editor :as editor]
             [pinaclj-rich-text-editor.hiccup :as hiccup]
+            [pinaclj-rich-text-editor.key-strokes :as key-strokes]
             [pinaclj-rich-text-editor.render :as render]
             [pinaclj-rich-text-editor.selection :as selection]
             [pinaclj-rich-text-editor.zipper :as zipper]
@@ -22,9 +23,11 @@
   (swap! state editor/insert-into-loc (char (.-charCode e))))
 
 (defn- handle-keydown [e]
-  (when-let [new-state (strong-text/toggle @state e)]
-    (reset! state new-state)
-    (.preventDefault e)))
+  (let [key-stroke (key-strokes/->key-stroke e)
+        old-state @state]
+    (swap! state strong-text/toggle key-stroke)
+    (if-not (= @state old-state)
+      (.preventDefault e))))
 
 (defn- assign-key-to-node [next-key-fn node]
   (if (vector? node) (hiccup/insert-attr node :key (next-key-fn)) node))

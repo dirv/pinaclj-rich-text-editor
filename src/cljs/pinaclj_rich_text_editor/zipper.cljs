@@ -28,4 +28,6 @@
       mapped-loc
       (recur next-loc map-fn))))
 
+(defn ->focus [loc text-position])
+
 
