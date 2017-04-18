@@ -5,7 +5,7 @@
   (assoc state :strong false))
 
 (defn- insert-strong [new-key node]
-  (conj node [:b {:key new-key} ""]))
+  (conj node [:strong {:key new-key} ""]))
 
 (defn handle [{strong :strong loc :doc-loc :as state} c]
   (if strong
