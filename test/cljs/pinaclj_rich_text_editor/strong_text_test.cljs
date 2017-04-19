@@ -19,6 +19,7 @@
 (def empty-doc (zipper/->zip [:root]))
 (def strong-doc (zip/next (zipper/->zip [:root [:strong {:key 1} "A"]])))
 (def strong-em-doc (zip/next (zip/next (zipper/->zip [:root [:strong {:key 1} [:em {:key 2}]]]))))
+(def text-doc (zip/next (zipper/->zip [:root [:p {:key 1} "test node"]])))
 
 (defn- perform [state c]
   (-> (:doc-loc (strong-text/handle state c))
@@ -47,4 +48,11 @@
     (is (= [1 1 0]
            (:selection-focus (strong-text/handle {:strong false
                                                   :doc-loc strong-doc
-                                                  :selection-focus [1 0 1]} \X))))))
+                                                  :selection-focus [1 0 1]} \X)))))
+  (testing "splits a text node when inserting tag"
+    (let [state (strong-text/handle {:strong true
+                                     :doc-loc text-doc
+                                     :selection-focus [1 0 4]
+                                     :next-key-fn (fn [] 2)} \X)]
+      (is (= [:root [:p {:key 1} "test" [:strong {:key 2}] " node"]] (zip/root (:doc-loc state))))
+      (is (= [2 0 0] (:selection-focus state))))))
