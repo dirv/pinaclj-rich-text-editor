@@ -7,16 +7,20 @@
 (defn initialize [state]
   (assoc state :strong false))
 
+(defn- insert-if-not-empty [loc insert-fn s]
+  (if (= s "")
+    loc
+    (insert-fn loc s)))
+
 (defn- insert-node [new-node current-text-node text-position parent-loc]
   (if (zero? (count (zip/children parent-loc)))
     (zip/insert-child parent-loc new-node)
     (let [replace-loc (nth (iterate zip/next parent-loc) (inc current-text-node))
           text (zip/node replace-loc)]
       (-> replace-loc
-          (zip/edit subs 0 text-position)
-          (zip/insert-right new-node)
-          (zip/right)
-          (zip/insert-right (subs text text-position))))))
+          (zip/replace new-node)
+          (insert-if-not-empty zip/insert-left (subs text 0 text-position))
+          (insert-if-not-empty zip/insert-right (subs text text-position))))))
 
 (defn- insert-and-move-to-strong-tag [{loc :doc-loc next-key-fn :next-key-fn [_ current-text-node position] :selection-focus :as state}]
   (let [new-key (next-key-fn)

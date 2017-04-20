@@ -55,4 +55,16 @@
                                      :selection-focus [1 0 4]
                                      :next-key-fn (fn [] 2)} \X)]
       (is (= [:root [:p {:key 1} "test" [:strong {:key 2}] " node"]] (zip/root (:doc-loc state))))
-      (is (= [2 0 0] (:selection-focus state))))))
+      (is (= [2 0 0] (:selection-focus state)))))
+  (testing "does not return empty text nodes when splitting at lhs"
+    (let [state (strong-text/handle {:strong true
+                                     :doc-loc text-doc
+                                     :selection-focus [1 0 0]
+                                     :next-key-fn (fn [] 2)} \X)]
+      (is (= [:root [:p {:key 1} [:strong {:key 2}] "test node"]] (zip/root (:doc-loc state))))))
+  (testing "does not return empty text nodes when splitting at rhs"
+    (let [state (strong-text/handle {:strong true
+                                     :doc-loc text-doc
+                                     :selection-focus [1 0 9]
+                                     :next-key-fn (fn [] 2)} \X)]
+      (is (= [:root [:p {:key 1} "test node" [:strong {:key 2}]]] (zip/root (:doc-loc state)))))))
