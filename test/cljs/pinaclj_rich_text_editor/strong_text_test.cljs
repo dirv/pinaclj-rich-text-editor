@@ -104,4 +104,11 @@
                           :selection-focus [2 0 4]
                           :next-key-fn (fn [] 3)} \X)]
       (is (= [:root [:p {:key 1} [:strong {:key 2} "test"] "" [:strong {:key 3} " node"]]] (doc state)))
-      (is (= [1 1 0] (:selection-focus state))))))
+      (is (= [1 1 0] (:selection-focus state)))))
+
+  (testing "creates empty nodes when leaving a strong tag at lhs"
+    (let [state (perform {:strong false
+                          :doc-loc strong-text-doc
+                          :selection-focus [2 0 0]} \X)]
+      (is (= [:root [:p {:key 1} "" [:strong {:key 2} "test node"]]](doc state)))
+      (is (= [1 0 0] (:selection-focus state))))))

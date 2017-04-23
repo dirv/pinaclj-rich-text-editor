@@ -52,15 +52,32 @@
   ([[tag attrs text-node] start]
    [tag attrs (subs text-node start)]))
 
-(defn- change-key [node new-key]
-  (assoc-in node [1 :key] new-key))
+(defn- change-key [attrs new-key-fn]
+  (assoc attrs :key (new-key-fn)))
+
+(defn- split-text [text position]
+  [(subs text 0 position) (subs text position)])
+
+(defn- do-replace [node text replace-fn]
+  (if (= text "") node (replace-fn node)))
+
+(defn- choose-first-key-or-next-key-fn [node next-key-fn]
+  (let [existing-key (atom (key-of node))]
+    (fn []
+      (if @existing-key
+        (let [this-key @existing-key]
+          (reset! existing-key nil)
+          this-key)
+        (next-key-fn)))))
 
 (defn- split-strong-tag [{loc :doc-loc [_ current-text-node position] :selection-focus next-key-fn :next-key-fn :as state}]
-  (let [node (zip/node loc)]
+  (let [[tag attrs text] (zip/node loc)
+        [left right] (split-text text position)
+        next-key-fn (choose-first-key-or-next-key-fn loc next-key-fn)]
     (-> loc
         (zip/replace "")
-        (zip/insert-left (cut-at node 0 position))
-        (zip/insert-right (-> node (cut-at position) (change-key (next-key-fn)))))))
+        (do-replace left #(zip/insert-left % [tag (change-key attrs next-key-fn) left]))
+        (do-replace right #(zip/insert-right % [tag (change-key attrs next-key-fn) right])))))
 
 (defn- move-out-of-strong-tag [state]
   (let [new-loc (split-strong-tag state)]
