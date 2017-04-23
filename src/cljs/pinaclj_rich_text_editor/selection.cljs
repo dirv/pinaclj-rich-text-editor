@@ -22,7 +22,7 @@
 (defn- node-key-matcher [node-key]
   (partial hiccup/matches-attr? :key node-key))
 
-(defn- move-loc-to-focus [loc [node-key _ _]]
+(defn move-loc-to-focus [loc [node-key _ _]]
   (zipper/find-loc loc (node-key-matcher node-key)))
 
 (defn- ->key [loc]

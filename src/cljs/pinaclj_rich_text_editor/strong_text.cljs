@@ -14,7 +14,7 @@
 
 (defn- insert-node [new-node current-text-node text-position parent-loc]
   (if (zero? (count (zip/children parent-loc)))
-    (zip/insert-child parent-loc new-node)
+    (zip/down (zip/insert-child parent-loc new-node))
     (let [replace-loc (nth (iterate zip/next parent-loc) (inc current-text-node))
           text (zip/node replace-loc)]
       (-> replace-loc
@@ -32,11 +32,41 @@
 (defn- move-right [[parent text-node _]]
   [parent (inc text-node) 0])
 
-(defn- move-out-of-strong-tag [{loc :doc-loc focus :selection-focus :as state}]
-  (let [new-loc (zip/right loc)]
+(defn- text-node-index [text-node-loc]
+  (count (zip/lefts text-node-loc)))
+
+(defn- key-of [loc]
+  (hiccup/attr (zip/node loc) :key))
+
+(defn- text-node? [loc]
+  (string? (zip/node loc)))
+
+(defn- to-caret [loc]
+  (if (text-node? loc)
+    [(key-of (zip/up loc)) (text-node-index loc) 0]
+    [(key-of loc) 0 0]))
+
+(defn- cut-at
+  ([[tag attrs text-node] start end]
+   [tag attrs (subs text-node start end)])
+  ([[tag attrs text-node] start]
+   [tag attrs (subs text-node start)]))
+
+(defn- change-key [node new-key]
+  (assoc-in node [1 :key] new-key))
+
+(defn- split-strong-tag [{loc :doc-loc [_ current-text-node position] :selection-focus next-key-fn :next-key-fn :as state}]
+  (let [node (zip/node loc)]
+    (-> loc
+        (zip/replace "")
+        (zip/insert-left (cut-at node 0 position))
+        (zip/insert-right (-> node (cut-at position) (change-key (next-key-fn)))))))
+
+(defn- move-out-of-strong-tag [state]
+  (let [new-loc (split-strong-tag state)]
     (assoc state
          :doc-loc new-loc
-         :selection-focus (move-right focus))))
+         :selection-focus (to-caret new-loc))))
 
 (defn- tag-path [loc]
   (set (map first (conj (zip/path loc) (zip/node loc)))))
@@ -50,7 +80,6 @@
       (move-out-of-strong-tag state)
       :else
       state)))
-
 
 (defn toggle [{strong :strong :as state} key-stroke]
   (if (= key-stroke #{:B :meta})
