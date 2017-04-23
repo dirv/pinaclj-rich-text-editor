@@ -110,5 +110,19 @@
     (let [state (perform {:strong false
                           :doc-loc strong-text-doc
                           :selection-focus [2 0 0]} \X)]
-      (is (= [:root [:p {:key 1} "" [:strong {:key 2} "test node"]]](doc state)))
-      (is (= [1 0 0] (:selection-focus state))))))
+      (is (= [:root [:p {:key 1} "" [:strong {:key 2} "test node"]]] (doc state)))
+      (is (= [1 0 0] (:selection-focus state)))))
+
+  (testing "creates empty nodes when leaving a strong tag at rhs"
+    (let [state (perform {:strong false
+                          :doc-loc strong-text-doc
+                          :selection-focus [2 0 9]} \X)]
+      (is (= [:root [:p {:key 1} [:strong {:key 2} "test node"] ""]] (doc state)))
+      (is (= [1 1 0] (:selection-focus state)))))
+
+  (testing "recreates in-between nodes when closing this one"
+    (let [state (perform {:strong false
+                          :doc-loc strong-em-doc
+                          :selection-focus [2 0 0]} \X)]
+      (is (= [:root [:p {:key 0} [:em {:key 2}]]] (doc state)))
+      (is (= [2 0 0] (:selection-focus state))))))

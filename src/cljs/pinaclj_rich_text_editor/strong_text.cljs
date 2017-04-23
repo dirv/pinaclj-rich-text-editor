@@ -70,12 +70,23 @@
           this-key)
         (next-key-fn)))))
 
+(defn- tag-path [loc]
+  (map first (conj (zip/path loc) (zip/node loc))))
+
+(defn- child-node-of-tag [loc parent-tag]
+  (last (take-while #(and (not (nil? %)) (not= parent-tag (hiccup/tag (zip/node %)))) (iterate zip/up loc))))
+
+(defn- node-with-tag [loc tag]
+  (some #(when (= tag (hiccup/tag (zip/node %))) %) (take-while #(not (nil? %)) (iterate zip/up loc))))
+
 (defn- split-strong-tag [{loc :doc-loc [_ current-text-node position] :selection-focus next-key-fn :next-key-fn :as state}]
   (let [[tag attrs text] (zip/node loc)
-        [left right] (split-text text position)
-        next-key-fn (choose-first-key-or-next-key-fn loc next-key-fn)]
-    (-> loc
-        (zip/replace "")
+        [left right] (if text (split-text text position) ["" ""])
+        next-key-fn (choose-first-key-or-next-key-fn loc next-key-fn)
+        strong-node (node-with-tag loc :strong)
+        children (zip/children strong-node)]
+    (-> strong-node
+        (zip/replace (or (first (filter vector? children)) ""))
         (do-replace left #(zip/insert-left % [tag (change-key attrs next-key-fn) left]))
         (do-replace right #(zip/insert-right % [tag (change-key attrs next-key-fn) right])))))
 
@@ -85,11 +96,8 @@
          :doc-loc new-loc
          :selection-focus (to-caret new-loc))))
 
-(defn- tag-path [loc]
-  (set (map first (conj (zip/path loc) (zip/node loc)))))
-
 (defn handle [{strong :strong loc :doc-loc :as state} _]
-  (let [currently-in-tag ((tag-path loc) :strong)]
+  (let [currently-in-tag (some #{:strong} (tag-path loc))]
     (cond
       (and strong (not currently-in-tag))
       (insert-and-move-to-strong-tag state)
