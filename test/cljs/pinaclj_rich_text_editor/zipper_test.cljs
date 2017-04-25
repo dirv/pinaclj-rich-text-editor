@@ -35,3 +35,12 @@
            (-> [:p [:p "childA"] [:p "childB"]] zipper/->zip (zipper/find-loc #(= (second %) "childA")) zip/node)))))
 
 
+(deftest split-node []
+  (testing "returns two text strings if splitting a text node"
+    (let [parent-loc (zipper/->zip "text-loc")
+          text-node-loc parent-loc]
+      (is (= ["text" "-loc"] (zipper/split-node parent-loc text-node-loc 4)))))
+  (testing "includes parent node"
+    (let [parent-loc (zipper/->zip [:p "text-loc"])
+          text-node-loc (zip/down parent-loc)]
+      (is (= [[:p "text"] [:p "-loc"]] (zipper/split-node parent-loc text-node-loc 4))))))

@@ -30,4 +30,16 @@
 
 (defn ->focus [loc text-position])
 
+(defn- distance-between [parent-loc loc]
+  (count (take-while #(not= parent-loc %) (iterate zip/up loc))))
+
+(defn- up-times [n loc]
+  (nth (iterate zip/up loc) n))
+
+(defn split-node [parent-loc text-node-loc position]
+  (let [distance (distance-between parent-loc text-node-loc)
+        left (zip/edit text-node-loc subs 0 position)
+        right (zip/edit text-node-loc subs position)]
+    (mapv zip/node [(up-times distance left) (up-times distance right)])))
+
 
