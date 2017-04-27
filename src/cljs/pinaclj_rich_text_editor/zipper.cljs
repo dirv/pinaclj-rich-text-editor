@@ -36,10 +36,24 @@
 (defn- up-times [n loc]
   (nth (iterate zip/up loc) n))
 
+(defn- remove-left-siblings [loc]
+  (let [parent (zip/up loc)]
+    (if (zip/lefts loc)
+    (let [children (zip/children parent)]
+      (zip/replace parent (make-node (zip/node parent) (subvec children (count (zip/lefts loc))))))
+    parent)))
+
+(defn- remove-right-siblings [loc]
+  (let [parent (zip/up loc)]
+    (if (zip/rights loc)
+      (let [children (zip/children parent)]
+        (zip/replace parent (make-node (zip/node parent) (subvec children 0 (inc (count (zip/lefts loc)))))))
+      parent)))
+
 (defn split-node [parent-loc text-node-loc position]
   (let [distance (distance-between parent-loc text-node-loc)
-        left (zip/edit text-node-loc subs 0 position)
-        right (zip/edit text-node-loc subs position)]
-    (mapv zip/node [(up-times distance left) (up-times distance right)])))
+        left (remove-right-siblings (up-times (dec distance) (zip/edit text-node-loc subs 0 position)))
+        right (remove-left-siblings (up-times (dec distance) (zip/edit text-node-loc subs position)))]
+    (mapv zip/node [left right])))
 
 

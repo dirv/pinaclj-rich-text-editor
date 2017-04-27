@@ -37,10 +37,18 @@
 
 (deftest split-node []
   (testing "returns two text strings if splitting a text node"
-    (let [parent-loc (zipper/->zip "text-loc")
-          text-node-loc parent-loc]
-      (is (= ["text" "-loc"] (zipper/split-node parent-loc text-node-loc 4)))))
-  (testing "includes parent node"
-    (let [parent-loc (zipper/->zip [:p "text-loc"])
+    (let [parent-loc (zipper/->zip [:root "text-loc"])
           text-node-loc (zip/down parent-loc)]
-      (is (= [[:p "text"] [:p "-loc"]] (zipper/split-node parent-loc text-node-loc 4))))))
+      (is (= [[:root "text"] [:root "-loc"]] (zipper/split-node parent-loc text-node-loc 4)))))
+  (testing "includes parent node"
+    (let [parent-loc (zip/down (zipper/->zip [:root [:p "text-loc"]]))
+          text-node-loc (zip/down parent-loc)]
+      (is (= [[:p "text"] [:p "-loc"]] (zipper/split-node parent-loc text-node-loc 4)))))
+  (testing "removes nodes on left side"
+    (let [parent-loc (zip/down (zipper/->zip [:root [:p [:strong "test"] [:em "-loc"]]]))
+          text-node-loc (-> parent-loc zip/down zip/right zip/down)]
+      (is (= [[:p [:strong "test"] [:em "-"]] [:p [:em "loc"]]] (zipper/split-node parent-loc text-node-loc 1)))))
+  (testing "removes nodes on right side"
+    (let [parent-loc (zip/down (zipper/->zip [:root [:p [:em "-loc"] [:strong "test"]]]))
+          text-node-loc (-> parent-loc zip/down zip/down)]
+      (is (= [[:p [:em "-"]] [:p [:em "loc"] [:strong "test"]]] (zipper/split-node parent-loc text-node-loc 1))))))
