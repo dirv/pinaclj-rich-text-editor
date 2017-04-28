@@ -51,4 +51,8 @@
   (testing "removes nodes on right side"
     (let [parent-loc (zip/down (zipper/->zip [:root [:p [:em "-loc"] [:strong "test"]]]))
           text-node-loc (-> parent-loc zip/down zip/down)]
-      (is (= [[:p [:em "-"]] [:p [:em "loc"] [:strong "test"]]] (zipper/split-node parent-loc text-node-loc 1))))))
+      (is (= [[:p [:em "-"]] [:p [:em "loc"] [:strong "test"]]] (zipper/split-node parent-loc text-node-loc 1)))))
+  (testing "returns nil if split would result in an empty rhs"
+    (let [parent-loc (zipper/->zip [:root "text-loc"])
+          text-node-loc (zip/down parent-loc)]
+      (is (= [[:root "text-loc"] nil] (zipper/split-node parent-loc text-node-loc 8))))))

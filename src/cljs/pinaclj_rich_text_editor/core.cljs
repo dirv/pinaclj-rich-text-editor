@@ -33,7 +33,7 @@
   (if (vector? node) (hiccup/insert-attr node :key (next-key-fn)) node))
 
 (defn- assign-keys [{loc :doc-loc next-key-fn :next-key-fn :as state}]
-  (assoc state :doc-loc (zipper/map-loc loc (partial assign-key-to-node next-key-fn))))
+  (assoc state :doc-loc (zipper/map-loc (partial assign-key-to-node next-key-fn) loc)))
 
 (defn- render-into [root]
   (when-let [children (zip/children (zipper/root-loc (:doc-loc @state)))]

@@ -19,7 +19,8 @@
 
 (def empty-doc [:root])
 (def strong-doc [:root [:p {:key 0} [:strong {:key 1} "A"]]])
-(def strong-em-doc [:root [:p {:key 0} [:strong {:key 1} [:em {:key 2}]]]])
+(def strong-em-doc [:root [:p {:key 0} [:strong {:key 1} [:em {:key 2} ""]]]])
+(def strong-em-text-doc [:root [:p {:key 0} [:strong {:key 1} [:em {:key 2} "test node"]]]])
 (def text-doc [:root [:p {:key 1} "test node"]])
 (def strong-text-doc [:root [:p {:key 1} [:strong {:key 2} "test node"]]])
 
@@ -124,5 +125,16 @@
     (let [state (perform {:strong false
                           :doc-loc strong-em-doc
                           :selection-focus [2 0 0]} \X)]
-      (is (= [:root [:p {:key 0} [:em {:key 2}]]] (doc state)))
-      (is (= [2 0 0] (:selection-focus state))))))
+      (is (= [:root [:p {:key 0} [:em {:key 2} ""]]] (doc state)))
+      (is (= [2 0 0] (:selection-focus state)))))
+
+  (testing "it splits nodes correctly when in the middle of chain"
+    (let [state (perform {:strong false
+                          :doc-loc strong-em-text-doc
+                          :selection-focus [2 0 4]
+                          :next-key-fn (let [next-key (atom 3)]
+                                         (fn []
+                                           (let [new-key @next-key]
+                                             (swap! next-key inc)
+                                             new-key)))} \X)]
+      (is (= [:root [:p {:key 0} [:strong {:key 1} [:em {:key 2} "test"]] [:em {:key 3} ""] [:strong {:key 4} [:em {:key 5} " node"]]]] (doc state))))))

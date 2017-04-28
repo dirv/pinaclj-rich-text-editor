@@ -1,16 +1,9 @@
 (ns pinaclj-rich-text-editor.zipper
-  (:require [clojure.zip :as zip]))
-
-(defn- children [[_ & [attrs-or-first-child & remaining-children :as all-children]]]
-  (if (map? attrs-or-first-child) remaining-children all-children))
-
-(defn- make-node [[tag & existing] replace-children]
-  (if (map? (first existing))
-    (into [tag (first existing)] replace-children)
-    (into [tag] replace-children)))
+  (:require [clojure.zip :as zip]
+            [pinaclj-rich-text-editor.hiccup :as hiccup]))
 
 (def ->zip
-  (partial zip/zipper vector? children make-node))
+  (partial zip/zipper vector? hiccup/children hiccup/replace-children))
 
 (defn- root-loc [z]
   (last (take-while #(not (nil? %)) (iterate zip/up z))))
@@ -21,12 +14,12 @@
 (defn find-loc [z predicate]
   (some #(when (predicate (zip/node %)) %) (dfs z)))
 
-(defn map-loc [z map-fn]
+(defn map-loc [map-fn z]
   (let [mapped-loc (zip/edit z map-fn)
         next-loc (zip/next mapped-loc)]
     (if (zip/end? next-loc)
       mapped-loc
-      (recur next-loc map-fn))))
+      (recur map-fn next-loc))))
 
 (defn ->focus [loc text-position])
 
@@ -40,20 +33,30 @@
   (let [parent (zip/up loc)]
     (if (zip/lefts loc)
     (let [children (zip/children parent)]
-      (zip/replace parent (make-node (zip/node parent) (subvec children (count (zip/lefts loc))))))
+      (zip/replace parent (hiccup/replace-children (zip/node parent) (subvec children (count (zip/lefts loc))))))
     parent)))
 
 (defn- remove-right-siblings [loc]
   (let [parent (zip/up loc)]
     (if (zip/rights loc)
       (let [children (zip/children parent)]
-        (zip/replace parent (make-node (zip/node parent) (subvec children 0 (inc (count (zip/lefts loc)))))))
+        (zip/replace parent (hiccup/replace-children (zip/node parent) (subvec children 0 (inc (count (zip/lefts loc)))))))
       parent)))
 
-(defn split-node [parent-loc text-node-loc position]
-  (let [distance (distance-between parent-loc text-node-loc)
-        left (remove-right-siblings (up-times (dec distance) (zip/edit text-node-loc subs 0 position)))
-        right (remove-left-siblings (up-times (dec distance) (zip/edit text-node-loc subs position)))]
-    (mapv zip/node [left right])))
+(defn- split-text-node [text-node-loc position]
+  [(zip/edit text-node-loc subs 0 position) (zip/edit text-node-loc subs position)])
 
+(defn- remove-siblings [text-node-loc distance remove-fn]
+  (if (not= "" (zip/node text-node-loc))
+    (->> text-node-loc
+         (up-times distance)
+        remove-fn
+        zip/node)))
+
+(defn split-node [parent-loc text-node-loc position]
+  (let [distance (dec (distance-between parent-loc text-node-loc))
+        [left-text right-text] (split-text-node text-node-loc position)
+        left (remove-siblings left-text distance remove-right-siblings)
+        right (remove-siblings right-text distance remove-left-siblings)]
+    [left right]))
 
