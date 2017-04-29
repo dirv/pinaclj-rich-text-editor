@@ -28,9 +28,6 @@
            :doc-loc (->> loc (insert-node new-node position))
            :selection-focus [new-key nil 0])))
 
-(defn- move-right [[parent text-node _]]
-  [parent (inc text-node) 0])
-
 (defn- text-node-index [text-node-loc]
   (count (zip/lefts text-node-loc)))
 
@@ -45,15 +42,6 @@
     [(key-of (zip/up loc)) (text-node-index loc) 0]
     [(key-of loc) 0 0]))
 
-(defn- cut-at
-  ([[tag attrs text-node] start end]
-   [tag attrs (subs text-node start end)])
-  ([[tag attrs text-node] start]
-   [tag attrs (subs text-node start)]))
-
-(defn- child-node-of-tag [loc parent-tag]
-  (last (take-while #(and (not (nil? %)) (not= parent-tag (hiccup/tag (zip/node %)))) (iterate zip/up loc))))
-
 (defn- node-with-tag [loc tag]
   (some #(when (= tag (hiccup/tag (zip/node %))) %) (take-while #(not (nil? %)) (iterate zip/up loc))))
 
@@ -61,7 +49,6 @@
   (if (vector? node)
     (hiccup/set-attr node :key (if key-fn (key-fn) 2))
     node))
-
 
 (defn- tags-between [parent-tag loc]
   (take-while #(not= parent-tag %) (reverse (zipper/tag-path loc))))
