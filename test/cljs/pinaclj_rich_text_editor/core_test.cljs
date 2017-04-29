@@ -51,23 +51,23 @@
 (deftest typing []
   (testing "typing a character inserts that character into existing paragraph"
     (is (= "<p>C</p>" (perform [[:p ""]] #(type-key \C :shift true)))))
-  (testing "typing a control character does not cause a character to appear"
-    (is (= "<p></p>" (perform [[:p ""]] #(type-key \B :meta true)))))
-  (testing "typing the bold character and then text causes bold text to appear"
+  (comment (testing "typing a control character does not cause a character to appear"
+    (is (= "<p></p>" (perform [[:p ""]] #(type-key \B :meta true))))))
+  (comment (testing "typing the bold character and then text causes bold text to appear"
     (is (= "<p><strong>C</strong></p>" (perform [[:p ""]] #(do (type-key \B :meta true)
-                                                   (type-key \C :shift true))))))
-  (testing "opens a paragraph element if there isn't one already"
-    (is (= "<p>C</p>" (perform [] #(type-key \C :shift true))))))
+                                                   (type-key \C :shift true)))))))
+  (comment (testing "opens a paragraph element if there isn't one already"
+    (is (= "<p>C</p>" (perform [] #(type-key \C :shift true)))))))
 
 (deftest positioning []
-  (testing "text is inserted at last-clicked position"
+  (comment (testing "text is inserted at last-clicked position"
     (is (= "<p>Hello, world</p>"
            (perform [[:p {:key "initial"} "Hello world"]]
                     #(do (set-range "initial" 5)
-                         (type-key \,))))))
-  (testing "positions when text node is the third child"
+                         (type-key \,)))))))
+  (comment (testing "positions when text node is the third child"
     (is (= "<p><strong>Hello</strong> world!</p>"
            (perform [[:p {:key "1"} [:strong {:key "2"} "Hello"] " world"]]
                     #(do (set-range "1" 1 6)
-                         (type-key \!)))))))
+                         (type-key \!))))))))
 

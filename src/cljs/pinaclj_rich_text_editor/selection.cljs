@@ -5,8 +5,6 @@
     [pinaclj-rich-text-editor.zipper :as zipper]
     [clojure.zip :as zip]))
 
-(def unknown-position [nil 0 0])
-
 (defn- ->caret [text-node text-position]
   (let [parent (.-parentNode text-node)]
     [(dom/attr :key parent)
@@ -22,8 +20,11 @@
 (defn- node-key-matcher [node-key]
   (partial hiccup/matches-attr? :key node-key))
 
-(defn move-loc-to-focus [loc [node-key _ _]]
-  (zipper/find-loc loc (node-key-matcher node-key)))
+(defn move-loc-to-focus [loc [node-key current-text-node _]]
+  (let [parent-node (or (zipper/find-loc loc (node-key-matcher node-key)) loc)]
+    (if-not (nil? current-text-node)
+      (nth (iterate zip/next parent-node) (inc current-text-node))
+      parent-node)))
 
 (defn- ->key [loc]
   (hiccup/attr (zip/node loc) :key))

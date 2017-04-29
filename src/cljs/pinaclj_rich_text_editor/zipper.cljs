@@ -60,3 +60,6 @@
         right (remove-siblings right-text distance remove-left-siblings)]
     [left right]))
 
+(defn- tag-path [loc]
+  (map first (filter vector? (conj (zip/path loc) (zip/node loc)))))
+

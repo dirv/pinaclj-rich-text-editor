@@ -12,22 +12,21 @@
     loc
     (insert-fn loc s)))
 
-(defn- insert-node [new-node current-text-node text-position parent-loc]
-  (if (zero? (count (zip/children parent-loc)))
-    (zip/down (zip/insert-child parent-loc new-node))
-    (let [replace-loc (nth (iterate zip/next parent-loc) (inc current-text-node))
-          text (zip/node replace-loc)]
+(defn- insert-node [new-node text-position replace-loc]
+  (if (vector? (zip/node replace-loc))
+    (zip/down (zip/insert-child replace-loc new-node))
+    (let [text (zip/node replace-loc)]
       (-> replace-loc
           (zip/replace new-node)
           (insert-if-not-empty zip/insert-left (subs text 0 text-position))
           (insert-if-not-empty zip/insert-right (subs text text-position))))))
 
-(defn- insert-and-move-to-strong-tag [{loc :doc-loc next-key-fn :next-key-fn [_ current-text-node position] :selection-focus :as state}]
+(defn- insert-and-move-to-strong-tag [{loc :doc-loc next-key-fn :next-key-fn [_ _ position] :selection-focus :as state}]
   (let [new-key (next-key-fn)
         new-node [:strong {:key new-key}]]
     (assoc state
-           :doc-loc (->> loc (insert-node new-node current-text-node position))
-           :selection-focus [new-key 0 0 ])))
+           :doc-loc (->> loc (insert-node new-node position))
+           :selection-focus [new-key nil 0])))
 
 (defn- move-right [[parent text-node _]]
   [parent (inc text-node) 0])
@@ -52,9 +51,6 @@
   ([[tag attrs text-node] start]
    [tag attrs (subs text-node start)]))
 
-(defn- tag-path [loc]
-  (map first (conj (zip/path loc) (zip/node loc))))
-
 (defn- child-node-of-tag [loc parent-tag]
   (last (take-while #(and (not (nil? %)) (not= parent-tag (hiccup/tag (zip/node %)))) (iterate zip/up loc))))
 
@@ -68,8 +64,7 @@
 
 
 (defn- tags-between [parent-tag loc]
-  (println "parent tag" parent-tag (reverse (tag-path loc)))
-  (take-while #(not= parent-tag %) (reverse (tag-path loc))))
+  (take-while #(not= parent-tag %) (reverse (zipper/tag-path loc))))
 
 (defn- open-tags [[& tags]]
   (if (seq? tags)
@@ -77,10 +72,9 @@
     ""))
 
 (defn- split-strong-tag [{loc :doc-loc [_ current-text-node position] :selection-focus next-key-fn :next-key-fn :as state}]
-  (let [replace-loc (nth (iterate zip/next loc) (inc current-text-node))
-        strong-node (node-with-tag loc :strong)
+  (let [strong-node (node-with-tag loc :strong)
         tags-between (tags-between :strong loc)
-        [left right] (zipper/split-node strong-node replace-loc position)]
+        [left right] (zipper/split-node strong-node loc position)]
     (-> strong-node
         (#(if left (zip/insert-left % left) %))
         (zip/replace (hiccup/map-hiccup (partial change-key next-key-fn) (open-tags tags-between)))
@@ -93,7 +87,7 @@
          :selection-focus (to-caret new-loc))))
 
 (defn handle [{strong :strong loc :doc-loc :as state} _]
-  (let [currently-in-tag (some #{:strong} (tag-path loc))]
+  (let [currently-in-tag (some #{:strong} (zipper/tag-path loc))]
     (cond
       (and strong (not currently-in-tag))
       (insert-and-move-to-strong-tag state)

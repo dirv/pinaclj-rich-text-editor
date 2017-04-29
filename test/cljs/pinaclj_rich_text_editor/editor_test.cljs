@@ -7,9 +7,11 @@
             [pinaclj-rich-text-editor.zipper :as zipper]
             [clojure.zip :as zip]))
 
+(def unknown-position [nil 0 0])
+
 (def empty-doc (zipper/->zip [:div {}]))
 (def doc (zipper/->zip [:div [:p {}]]))
-(def hello-doc (-> (zipper/->zip [:div [:p {} "Hello world"]]) zip/down))
+(def hello-doc (-> (zipper/->zip [:div [:p "Hello world"]]) zip/down zip/next))
 (def multi-doc (zipper/find-loc (zipper/->zip [:div
                               [:p {:key "1"}]
                               [:p {:key "2"}]
@@ -20,12 +22,13 @@
   (-> {:doc-loc doc-loc :selection-focus position}
                 (editor/insert-into-loc c)
                 :doc-loc
+                zip/up
                 zip/node))
 
 (deftest insert-into-loc []
   (testing "creates a new paragraph if none exists"
-    (is (= [:p {} "a"] (insert empty-doc selection/unknown-position \a))))
+    (is (= [:p {} "a"] (insert empty-doc unknown-position \a))))
   (testing "inserts at specified point"
-    (is (= [:p {} "Hello, world"] (insert hello-doc [nil 0 5] \,))))
+    (is (= [:p "Hello, world"] (insert hello-doc [nil 0 5] \,))))
   (testing "inserts with the right key"
-    (is (= [:p {:key "3"} "x"] (insert multi-doc ["3" 0 0] \x)))))
+    (is (= [:p {:key "3"} "x"] (insert multi-doc ["3" nil 0] \x)))))

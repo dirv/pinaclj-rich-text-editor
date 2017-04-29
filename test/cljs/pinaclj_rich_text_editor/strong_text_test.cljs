@@ -25,11 +25,9 @@
 (def strong-text-doc [:root [:p {:key 1} [:strong {:key 2} "test node"]]])
 
 (defn- focus [state]
-  (let [root-loc (zipper/->zip (:doc-loc state))]
-    (assoc state
+  (assoc state
          :doc-loc
-         (or (selection/move-loc-to-focus root-loc (:selection-focus state))
-             root-loc))))
+         (selection/move-loc-to-focus (zipper/->zip (:doc state)) (:selection-focus state))))
 
 (defn- perform [state c]
   (-> (focus state)
@@ -44,34 +42,34 @@
 (deftest handle []
   (testing "inserts tag if it is not already in one"
     (let [state {:strong true
-                 :doc-loc empty-doc
-                 :selection-focus [0 0 0]
+                 :doc empty-doc
+                 :selection-focus [0 nil 0]
                  :next-key-fn (fn [] 5)}]
      (is (= [:strong {:key 5}] (zip/node (:doc-loc (perform state \X)))))))
 
   (testing "does not insert tag if it isn't toggled"
     (is (= empty-doc
            (doc (perform {:strong false
-                          :doc-loc empty-doc
+                          :doc empty-doc
                           :select-focus [0 0 0]} \X)))))
 
   (testing "does not insert tag if it's already in one"
     (is (= strong-doc
            (doc (perform {:strong true
-                          :doc-loc strong-doc
+                          :doc strong-doc
                           :selection-focus [1 0 1]
                           :next-key-fn (fn [] 5)} \X)))))
 
   (testing "does not insert tag if that tags appears somewhere higher in the tree"
     (is (= strong-em-doc
            (doc (perform {:strong true
-                          :doc-loc strong-em-doc
+                          :doc strong-em-doc
                           :selection-focus [2 0 0]
                           :next-key-fn (fn [] 5)} \X)))))
 
   (testing "moves out of the tag if it has been turned off but currently in it"
     (let [state {:strong false
-                 :doc-loc strong-doc
+                 :doc strong-doc
                  :selection-focus [1 0 1]
                  :next-key-fn (fn [] 5)}]
       (is (= [0 1 0]
@@ -79,29 +77,29 @@
 
   (testing "splits a text node when inserting tag"
     (let [state (perform {:strong true
-                          :doc-loc text-doc
+                          :doc text-doc
                           :selection-focus [1 0 4]
                           :next-key-fn (fn [] 2)} \X)]
       (is (= [:root [:p {:key 1} "test" [:strong {:key 2}] " node"]] (doc state)))
-      (is (= [2 0 0] (:selection-focus state)))))
+      (is (= [2 nil 0] (:selection-focus state)))))
 
   (testing "does not return empty text nodes when splitting at lhs"
     (let [state (perform {:strong true
-                          :doc-loc text-doc
+                          :doc text-doc
                           :selection-focus [1 0 0]
                           :next-key-fn (fn [] 2)} \X)]
       (is (= [:root [:p {:key 1} [:strong {:key 2}] "test node"]] (doc state)))))
 
   (testing "does not return empty text nodes when splitting at rhs"
     (let [state (perform {:strong true
-                          :doc-loc text-doc
+                          :doc text-doc
                           :selection-focus [1 0 9]
                           :next-key-fn (fn [] 2)} \X)]
       (is (= [:root [:p {:key 1} "test node" [:strong {:key 2}]]] (doc state)))))
 
   (testing "splitting a node when leaving a tag"
     (let [state (perform {:strong false
-                          :doc-loc strong-text-doc
+                          :doc strong-text-doc
                           :selection-focus [2 0 4]
                           :next-key-fn (fn [] 3)} \X)]
       (is (= [:root [:p {:key 1} [:strong {:key 2} "test"] "" [:strong {:key 3} " node"]]] (doc state)))
@@ -109,28 +107,28 @@
 
   (testing "creates empty nodes when leaving a strong tag at lhs"
     (let [state (perform {:strong false
-                          :doc-loc strong-text-doc
+                          :doc strong-text-doc
                           :selection-focus [2 0 0]} \X)]
       (is (= [:root [:p {:key 1} "" [:strong {:key 2} "test node"]]] (doc state)))
       (is (= [1 0 0] (:selection-focus state)))))
 
   (testing "creates empty nodes when leaving a strong tag at rhs"
     (let [state (perform {:strong false
-                          :doc-loc strong-text-doc
+                          :doc strong-text-doc
                           :selection-focus [2 0 9]} \X)]
       (is (= [:root [:p {:key 1} [:strong {:key 2} "test node"] ""]] (doc state)))
       (is (= [1 1 0] (:selection-focus state)))))
 
   (testing "recreates in-between nodes when closing this one"
     (let [state (perform {:strong false
-                          :doc-loc strong-em-doc
+                          :doc strong-em-doc
                           :selection-focus [2 0 0]} \X)]
       (is (= [:root [:p {:key 0} [:em {:key 2} ""]]] (doc state)))
       (is (= [2 0 0] (:selection-focus state)))))
 
   (testing "it splits nodes correctly when in the middle of chain"
     (let [state (perform {:strong false
-                          :doc-loc strong-em-text-doc
+                          :doc strong-em-text-doc
                           :selection-focus [2 0 4]
                           :next-key-fn (let [next-key (atom 3)]
                                          (fn []
