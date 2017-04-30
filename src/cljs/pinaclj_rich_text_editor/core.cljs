@@ -6,7 +6,7 @@
             [pinaclj-rich-text-editor.render :as render]
             [pinaclj-rich-text-editor.selection :as selection]
             [pinaclj-rich-text-editor.zipper :as zipper]
-            [pinaclj-rich-text-editor.strong-text :as strong-text]
+            [pinaclj-rich-text-editor.toggles :as toggles]
             [clojure.zip :as zip]))
 
 (def state (atom {}))
@@ -25,7 +25,7 @@
 (defn- handle-keydown [e]
   (let [key-stroke (key-strokes/->key-stroke e)
         old-state @state]
-    (swap! state strong-text/toggle key-stroke)
+    (swap! state toggles/toggle key-stroke)
     (if-not (= @state old-state)
       (.preventDefault e))))
 
