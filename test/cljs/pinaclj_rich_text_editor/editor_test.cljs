@@ -12,10 +12,11 @@
 (def empty-doc (zipper/->zip [:div {}]))
 (def doc (zipper/->zip [:div [:p {}]]))
 (def hello-doc (-> (zipper/->zip [:div [:p "Hello world"]]) zip/down zip/next))
-(def multi-doc (zipper/find-loc (zipper/->zip [:div
-                              [:p {:key "1"}]
-                              [:p {:key "2"}]
-                              [:p {:key "3"}]])
+(def multi-doc (zipper/find-loc (zipper/->zip
+                                  [:div
+                                   [:p {:key "1"}]
+                                   [:p {:key "2"}]
+                                   [:p {:key "3"}]])
                                 (partial hiccup/matches-attr? :key "3")))
 
 (defn- insert [doc-loc position c]

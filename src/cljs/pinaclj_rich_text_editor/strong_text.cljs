@@ -7,79 +7,61 @@
 (defn initialize [state]
   (assoc state :strong false))
 
-(defn- insert-if-not-empty [loc insert-fn s]
+(defn- if-not-empty [loc insert-fn s]
   (if (= s "")
     loc
     (insert-fn loc s)))
 
 (defn- insert-node [new-node text-position replace-loc]
-  (if (vector? (zip/node replace-loc))
-    (zip/down (zip/insert-child replace-loc new-node))
+  (if (hiccup/text-node? (zip/node replace-loc))
     (let [text (zip/node replace-loc)]
       (-> replace-loc
           (zip/replace new-node)
-          (insert-if-not-empty zip/insert-left (subs text 0 text-position))
-          (insert-if-not-empty zip/insert-right (subs text text-position))))))
+          (if-not-empty zip/insert-left (subs text 0 text-position))
+          (if-not-empty zip/insert-right (subs text text-position))))
+    (zip/down (zip/insert-child replace-loc new-node))))
 
-(defn- insert-and-move-to-strong-tag [{loc :doc-loc next-key-fn :next-key-fn [_ _ position] :selection-focus :as state}]
-  (let [new-key (next-key-fn)
-        new-node [:strong {:key new-key}]]
-    (assoc state
-           :doc-loc (->> loc (insert-node new-node position))
-           :selection-focus [new-key nil 0])))
+(defn- change-key [key-fn node]
+  (if (hiccup/text-node? node)
+    node
+    (hiccup/set-attr node :key (if key-fn (key-fn) 2))))
 
-(defn- text-node-index [text-node-loc]
-  (count (zip/lefts text-node-loc)))
-
-(defn- key-of [loc]
-  (hiccup/attr (zip/node loc) :key))
-
-(defn- text-node? [loc]
-  (string? (zip/node loc)))
-
-(defn- to-caret [loc]
-  (if (text-node? loc)
-    [(key-of (zip/up loc)) (text-node-index loc) 0]
-    [(key-of loc) 0 0]))
+(defn- insert-strong-tag [{loc :doc-loc next-key-fn :next-key-fn [_ _ position] :selection-focus :as state}]
+  (insert-node [:strong {:key (next-key-fn)}] position loc))
 
 (defn- node-with-tag [loc tag]
   (some #(when (= tag (hiccup/tag (zip/node %))) %) (take-while #(not (nil? %)) (iterate zip/up loc))))
 
-(defn- change-key [key-fn node]
-  (if (vector? node)
-    (hiccup/set-attr node :key (if key-fn (key-fn) 2))
-    node))
-
 (defn- tags-between [parent-tag loc]
   (take-while #(not= parent-tag %) (reverse (zipper/tag-path loc))))
 
-(defn- open-tags [[& tags]]
-  (if (seq? tags)
-    [(first tags) (open-tags (rest tags))]
-    ""))
+(defn- recreate-tree [parent-tag loc next-key-fn]
+  (->> (tags-between parent-tag loc)
+       hiccup/open-tags
+       (hiccup/map-hiccup (partial change-key next-key-fn))))
 
 (defn- split-strong-tag [{loc :doc-loc [_ current-text-node position] :selection-focus next-key-fn :next-key-fn :as state}]
   (let [strong-node (node-with-tag loc :strong)
-        tags-between (tags-between :strong loc)
         [left right] (zipper/split-node strong-node loc position)]
     (-> strong-node
         (#(if left (zip/insert-left % left) %))
-        (zip/replace (hiccup/map-hiccup (partial change-key next-key-fn) (open-tags tags-between)))
-        (#(if right (zip/insert-right % (hiccup/map-hiccup (partial change-key next-key-fn) right)) %)))))
+        (zip/replace (recreate-tree :strong loc next-key-fn))
+        (#(if right (zip/insert-right % (hiccup/map-hiccup (partial change-key next-key-fn) right)) %))
+        (zipper/find-loc hiccup/text-node?))))
 
-(defn- move-out-of-strong-tag [state]
-  (let [new-loc (split-strong-tag state)]
+(defn- update-with [state update-fn]
+  (let [new-doc-loc (update-fn state)]
     (assoc state
-         :doc-loc new-loc
-         :selection-focus (to-caret new-loc))))
+           :doc-loc new-doc-loc
+           :selection-focus (zipper/->caret new-doc-loc))))
 
 (defn handle [{strong :strong loc :doc-loc :as state} _]
   (let [currently-in-tag (some #{:strong} (zipper/tag-path loc))]
     (cond
       (and strong (not currently-in-tag))
-      (insert-and-move-to-strong-tag state)
+      (update-with state insert-strong-tag)
       (and (not strong) currently-in-tag)
-      (move-out-of-strong-tag state)
+      (update-with state split-strong-tag)
       :else
       state)))
 

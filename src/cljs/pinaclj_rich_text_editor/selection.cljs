@@ -21,7 +21,7 @@
   (partial hiccup/matches-attr? :key node-key))
 
 (defn move-loc-to-focus [loc [node-key current-text-node _]]
-  (let [parent-node (or (zipper/find-loc loc (node-key-matcher node-key)) loc)]
+  (let [parent-node (or (zipper/find-loc (zipper/root-loc loc) (node-key-matcher node-key)) loc)]
     (if-not (nil? current-text-node)
       (nth (iterate zip/next parent-node) (inc current-text-node))
       parent-node)))
@@ -30,7 +30,7 @@
   (hiccup/attr (zip/node loc) :key))
 
 (defn- focus-at-first-para [loc]
-  [(->key (or (zipper/find-loc loc (partial hiccup/matches-tag? :p))
+  [(->key (or (zipper/find-loc (zipper/root-loc loc) (partial hiccup/matches-tag? :p))
               (zipper/root-loc loc))) 0 0])
 
 (defn on-focus-changed [{doc-loc :doc-loc :as state}]

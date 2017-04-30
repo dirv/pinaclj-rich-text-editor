@@ -13,6 +13,8 @@
 (defn matches-tag? [tag node]
   (and (vector? node) (= tag (first node))))
 
+(def text-node? string?)
+
 (defn insert-attr [[tag & [attrs-or-first-child & remaining-children :as all-children] :as node] k v]
   (if (nil? (attr node k))
     (if (map? attrs-or-first-child)
@@ -37,3 +39,9 @@
   (if (vector? node)
     (replace-children (f node) (mapv (partial map-hiccup f) (children node)))
     (f node)))
+
+(defn- open-tags [[& tags]]
+  (if (seq? tags)
+    [(first tags) (open-tags (rest tags))]
+    ""))
+

@@ -9,7 +9,7 @@
   (last (take-while #(not (nil? %)) (iterate zip/up z))))
 
 (defn- dfs [z]
-  (take-while #(not (zip/end? %)) (iterate zip/next (root-loc z))))
+  (take-while #(not (zip/end? %)) (iterate zip/next z)))
 
 (defn find-loc [z predicate]
   (some #(when (predicate (zip/node %)) %) (dfs z)))
@@ -21,7 +21,8 @@
       mapped-loc
       (recur map-fn next-loc))))
 
-(defn ->focus [loc text-position])
+(defn- child-index [loc]
+  (count (zip/lefts loc)))
 
 (defn- distance-between [parent-loc loc]
   (count (take-while #(not= parent-loc %) (iterate zip/up loc))))
@@ -33,14 +34,14 @@
   (let [parent (zip/up loc)]
     (if (zip/lefts loc)
     (let [children (zip/children parent)]
-      (zip/replace parent (hiccup/replace-children (zip/node parent) (subvec children (count (zip/lefts loc))))))
+      (zip/replace parent (hiccup/replace-children (zip/node parent) (subvec children (child-index loc)))))
     parent)))
 
 (defn- remove-right-siblings [loc]
   (let [parent (zip/up loc)]
     (if (zip/rights loc)
       (let [children (zip/children parent)]
-        (zip/replace parent (hiccup/replace-children (zip/node parent) (subvec children 0 (inc (count (zip/lefts loc)))))))
+        (zip/replace parent (hiccup/replace-children (zip/node parent) (subvec children 0 (inc (child-index loc))))))
       parent)))
 
 (defn- split-text-node [text-node-loc position]
@@ -62,4 +63,12 @@
 
 (defn- tag-path [loc]
   (map first (filter vector? (conj (zip/path loc) (zip/node loc)))))
+
+(defn- key-of [loc]
+  (hiccup/attr (zip/node loc) :key))
+
+(defn ->caret [loc]
+  (if (-> loc zip/node hiccup/text-node?)
+    [(key-of (zip/up loc)) (child-index loc) 0]
+    [(key-of loc) nil 0]))
 
