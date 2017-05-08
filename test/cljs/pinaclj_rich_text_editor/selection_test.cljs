@@ -24,7 +24,8 @@
     (let [doc [:root [:p {:key "parent-key"} "first-text-node" "text-node-with-focus"]]
           doc-loc (zipper/->zip doc)]
       (render doc-loc)
-      (dom-fixture/set-range (dom-fixture/->text-node (dom-fixture/find-dom-node "parent-key") 1) 5)
+      (let [node (dom-fixture/->text-node (dom-fixture/find-dom-node "parent-key") 1)]
+        (dom-fixture/set-range [node 5] [node 5]))
       (is (= ["parent-key" 1 5] (:selection-focus (perform doc-loc))))
       (is (= "text-node-with-focus" (zip/node (:doc-loc (perform doc-loc)))))))
   (testing "selects the first paragraph if no selection is set"

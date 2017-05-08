@@ -18,10 +18,10 @@
 (defn ->text-node [node index]
   (nth (array-seq (.-childNodes node)) index))
 
-(defn set-range [node offset]
+(defn set-range [[start-node start-offset] [end-node end-offset]]
   (let [selection (.getSelection js/document)
         rng (.createRange js/document)]
     (.removeAllRanges selection)
-    (.setStart rng node offset)
-    (.collapse rng true)
+    (.setStart rng start-node start-offset)
+    (.setEnd rng end-node end-offset)
     (.addRange selection rng)))
